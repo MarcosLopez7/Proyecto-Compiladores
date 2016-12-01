@@ -1,0 +1,362 @@
+PARSER_BEGIN(Parseador)
+
+import java.util.Vector;
+import java.util.Iterator;
+import java.io.PrintWriter;
+
+class Registro {
+
+  public int tipo;
+  public String id;
+
+  public Registro()
+  {
+     tipo = -1;
+     id = "";
+  }  
+
+}
+
+public class Parseador {
+
+  public static Vector tabla = new Vector();  
+
+  public static void guardaID(String id, int tipo)
+  {
+
+     if( buscaID(id) == -1)
+     {  
+        Registro r = new Registro();
+        r.tipo = tipo;
+        r.id = id;  
+        tabla.add(r);
+     }
+     else
+       System.out.println("La variable "+id+" ya fue declarada");
+  }
+
+  public static int buscaID(String id)
+  {
+      Registro r;
+
+       Iterator<Registro> itr = tabla.iterator();
+        while(itr.hasNext()){
+            r=itr.next();
+            if((r.id).equals(id))
+              return r.tipo;
+        }
+
+      return -1;
+  }
+
+  public static void main(String args[]) throws ParseException {
+    
+    String codigo = "";
+    try {
+      Parseador parser = new Parseador(new java.io.FileInputStream(args[0]));
+      codigo = parser.Programa();
+    }
+    catch(java.io.FileNotFoundException e)
+    {
+      System.out.println("El archivo no esta...");
+    }
+
+    try {
+    	PrintWriter writer = new PrintWriter("main.cpp", "UTF-8");
+	writer.println(codigo);
+        writer.close();
+    } catch (Exception e) {}
+  }
+
+}
+
+PARSER_END(Parseador)
+
+SKIP :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+}
+
+TOKEN :
+{
+   < ENTERO: ["0"-"9"] (["0"-"9"])* >
+          {  }
+ | < OP: ("<" | ">" | "=" ) >
+          {  }
+ | < ENT: "entonces" >
+          {  }
+ | < AVANZ: "avanza" >
+          {  }
+ | < RETRO: "retrocede" >
+          {  }
+ | < GIRA: "gira" >
+          {  }
+ | < FIN: "Fin" >
+          {  }
+ | < REPITE: "Repite" >
+          {  }
+ | < VECES: "veces" >
+          {  }
+ | < DOSP: ":" >
+          {  }
+ | < AP: "(" >
+          {  }
+ | < CP: ")" >
+          {  }
+ | < DER: "derecha" >
+          {  }
+ | < IZQ: "izquierda" >
+          {  }
+ | < S1: "s1" >
+          {  }
+ | < S2: "s2" >
+          {  }
+ | < S3: "s3" >
+          {  }
+ | < COMA: "," >
+          {  } 
+ | < SI: "Si">
+	  {  }
+
+}
+
+String Programa() :
+{String codigo; String estructuras = ""; String estruct;}
+{
+  
+  ( estruct = unaEstructura() {estructuras += "\t" + estruct;} )+ <EOF>
+  { 
+	codigo = "#include <iostream>\n#include \"Robot.h\"\nint main()\n{\n\tRobot r1();\n\tr1.connect();\n";
+	codigo += estructuras;
+	codigo += "\n\tr1.exit();\n}";
+	System.out.println("Fin del Programa"); 
+	return codigo;
+  }
+}
+
+String unaEstructura() :
+{String codigo;}
+{
+  codigo = funcion() 
+  { 	
+	codigo += "\n";
+	System.out.println("una estructura"); 
+  	return codigo;
+  }
+  | codigo = If() 
+  {
+        codigo += "\n";
+        System.out.println("una estructura");
+        return codigo;
+  } 
+  | codigo = For()
+  {
+	codigo += "\n";
+        System.out.println("una estructura");
+        return codigo;
+  }
+}
+
+String funcion() :
+{String codigo;}
+{
+  codigo = girar()
+  {
+        System.out.println("una estructura");
+        return codigo;
+  }
+  | codigo = avanzar()
+  {
+        System.out.println("una estructura");
+        return codigo;
+  }
+  | codigo = retroceder()
+  {
+        System.out.println("una estructura");
+        return codigo;
+  }
+}
+
+String girar() : 
+{Token numero; String codigo; int l;}
+{
+  <GIRA> <AP>  numero = <ENTERO>  <COMA> l = lado() <CP> 
+  { 
+	int num = Integer.parseInt(numero.image);
+	if(num >= 0 && 180 >= num) {
+		codigo = "r1.lock();\n\tr1.setDeltaHeading(" + num * l + ");\n\tr1.unlock();";
+		System.out.println("Función girar"); 
+	}
+	else {
+		System.out.println("Error: El número para hacer el giro debe ser entre 0 y 180");
+  		codigo = "";
+		System.exit(0);
+	}
+	
+	return codigo;
+  }
+}
+
+String avanzar() :
+{Token numero; String codigo;}
+{
+  <AVANZ> <AP> numero = <ENTERO> <CP>
+  {
+	int num = Integer.parseInt(numero.image);
+	codigo = "\tr1.lock();\n\tr1.move(" + num * 10 + ");\n\tr1.unlock();";
+	if(num > 500) 
+		System.out.println("Warning: El avance es mayor a 500 cm");
+	System.out.println("Función avanzar"); 
+
+	return codigo;
+  }
+}
+
+String retroceder() :
+{Token numero; String codigo;}
+{
+  <RETRO> <AP> numero = <ENTERO> <CP>
+  { 
+	int num = Integer.parseInt(numero.image);
+	codigo = "r1.lock();\n\tr1.move(" + num * -10 + ");\n\tr1.unlock();";
+	if(num > 500) 
+                System.out.println("Warning: El retroceso es mayor a 500 cm");
+	System.out.println("Función retroceder"); 
+	return codigo;
+  }
+}
+
+int lado() :
+{}
+{
+   <DER> { return 1; } 
+ | <IZQ> { return -1; }
+
+}
+
+String If() :
+{String codigo, condicion; String estructuras = ""; String estruct;}
+{
+  <SI> condicion = condicion() <ENT> ( LOOKAHEAD(2) estruct = unaEstructura(){ estructuras += estruct; })+ <FIN>
+  {
+	codigo =  "int s1 = r1.read(sonar1);\n\tif(" + condicion + ")\n\t{\n\t" + estructuras + "\n\t}";
+	System.out.println("Un If"); 
+	return codigo;
+  }
+}
+
+String condicion() :
+{ Token numero, op; String var; String codigo;}
+{
+  var = variable() op = <OP> numero = <ENTERO>
+  { 
+	int num = Integer.parseInt(numero.image);
+ 	if(num >= 30 && 500 >= num) {
+		codigo = var + " " + op.image + " " + num * 10;
+ 		System.out.println("Una condicion"); 
+	}
+	else {
+		System.out.println("Error: el numero a comparar debe estar entre 30 y 500");
+		codigo = "";
+		System.exit(0);  
+	}
+
+	return codigo;
+  }
+}
+
+String variable() :
+{ Token var; }
+{
+  var = <S1>
+  { 
+	System.out.println("Una variable"); 
+  	return var.image;
+  }
+  | var = <S2>
+  {
+        System.out.println("Una variable");
+        return var.image;
+  }
+  | var = <S3>
+  {
+        System.out.println("Una variable");
+        return var.image;
+  }
+
+}
+
+String For() :
+{String codigo; String estructura = ""; Token numero; String estruct;}
+{
+  <REPITE> numero = <ENTERO> <VECES> <DOSP> ( LOOKAHEAD(2) estruct = unaEstructura() { estructura += estruct;})+ <FIN> 
+  { 
+	int num = Integer.parseInt(numero.image);
+	codigo = "for(int i = 0; i < " + num + ";i++)\n\t{\n\t" + estructura + "\n\t}";
+	System.out.println("Un for"); 
+	return codigo;
+  }
+}
+/*
+
+void Input() :
+{  }
+{
+  (Declara())+ Operaciones() <EOF>
+  { System.out.println("Fin del Programa"); }
+}
+
+
+
+void Declara() :
+{ Token t; int tipo; }
+{
+    tipo = Tipo() t=<ID> <STOP> 
+    { 
+      System.out.println("Guardar "+t.image+" tipo "+tipo); 
+      guardaID(t.image,tipo);
+    }
+}
+
+int Tipo() :
+{ }
+OKAHEAD(2)
+{
+   <INT>   { return 1; }
+ | <FLOAT> { return 2; }
+}
+
+void Operaciones() :
+{ int uno, dos; }
+{
+   LOOKAHEAD(2)
+   uno = Exp() <OPA> dos = Exp() 
+    { 
+      if( uno != 1 || dos != 1)
+        System.out.println("Suma o resta debe ser con enteros"); 
+    }
+ | uno = Exp() <OPM> dos = Exp()
+    { System.out.println("Multiplicacion o division"); }
+}
+
+
+int Exp() :
+{ Token t; }
+{
+    <NUM>
+    { System.out.println("num entero "); return 1;}
+ |  <REAL>
+    { System.out.println("num flotante "); return 2;}
+ |  t = <ID>
+    { 
+       System.out.println("variable " + t.image+ " buscar "); 
+       int ti = buscaID(t.image);
+       if( ti == -1)
+         System.out.println("La variable "+t.image+" no fue declarada");
+       return ti;
+     }
+   
+}*/

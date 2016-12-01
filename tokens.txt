@@ -1,0 +1,46 @@
+TOKENS:
+
+var
+entero
+pos
+obj
+if
+else
+:
+,
+done
+=
++
+*
+-
+/
+<
+>
+==
+++
+--
+(
+)
+for
+to
+|#physics_start
+#end
+CADENA
+imprimir
+tiro_parabolico
+mover_horizontal
+ID
+obj
+
+GRAMÁTICA:
+
+S -> |#physics_start estructura #end
+estructura -> unaEstructura estructura | ""
+unaEstructura -> declara | if | for | imprimir
+declara -> var ID = ENTERO | pos ID = ( '('ENTERO, ENTERO')' | funcion) | obj ID = (ID, ENTERO, ENTERO, ENTERO)
+funcion -> tiro_parabolico'('ID, (ID | ENTERO)')' | mover_horizontal'('ID, (ID | ENTERO)')' 
+imprimir -> imprimir'(' CADENA ( '+' (ID|CADENA))* ')'
+if -> if compara : estructura done
+compara -> (ID | ENTERO) operadorlogico (ID | ENTERO) 
+operadorlogico -> == | < | > | <= | >=
+for -> for ID to ENTERO : estructura done

@@ -1,0 +1,9 @@
+|#physics_start
+        pos s1 = (0,0)
+	pos s2 = (50,0)
+	obj o1 = (s1, 50, 20, 0)
+	obj o2 = (s2, 30, 10, 0)
+	var t = 5
+        pos final = mover_horizontal(o1, t)
+	imprimir('Posicion de objeto 1: ' + final)
+#end

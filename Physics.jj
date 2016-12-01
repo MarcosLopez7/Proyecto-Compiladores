@@ -1,0 +1,130 @@
+PARSER_BEGIN(Physics)
+
+public class Physics {
+
+  public static void main(String args[]) throws ParseException {
+    try {
+      Physics parser = new Physics(new java.io.FileInputStream(args[0]));
+      parser.S();
+    }
+    catch(java.io.FileNotFoundException e)
+    {
+      System.out.println("El archivo no esta...");
+    }
+  }
+
+}
+
+PARSER_END(Physics)
+
+SKIP :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+}
+
+TOKEN :
+{
+   < ENTERO: ["0"-"9"] (["0"-"9"])* > {}
+|  < PABRE: "(" > {}
+|  < PCIERRA: ")" > {}
+|  < MAS: "+" > {}
+|  < ASTERISCO: "*" > {}
+|  < VAR: "var"> {}
+|  < POS: "pos"> {}
+|  < IF: "if"> {}
+|  < ELSE: "else"> {}
+|  < DOSP: ":"> {}
+|  < COMA: ","> {}
+|  < DONE: "done"> {}
+|  < ASIGNA: "="> {}
+|  < FOR: "for"> {}
+|  < TO: "to"> {}
+|  < START: "|#physics_start">
+|  < END: "#end">
+|  < IMPR: "imprimir">
+|  < TPAR: "tiro_parabolico">
+|  < MHOR: "mover_horizontal">
+|  < OBJ: "obj">
+|  < OPLOG: ( "==" | "<=" | ">=" | ">" | "<" )>
+|  < ID: ["a"-"z","A"-"Z"] ( ["a"-"z","A"-"Z","0"-"9"] )* >
+|  < CADENA: "'" ( ["a"-"z","A"-"Z","0"-"9", " ", ",", ".", ":"] )* "'" >
+}
+
+void S() :
+{}
+{
+     <START> (unaEstructura())+ <END> <EOF>
+     {
+         System.out.println("Hemos acabado");
+     } 
+}
+
+void unaEstructura() :
+{}
+{
+    ( declara() | If() | For() | imprimir() )
+    {
+        System.out.println("una estructura");
+    }
+}
+
+void declara() :
+{}
+{
+    ( <VAR> <ID> <ASIGNA> <ENTERO> | <POS> <ID> <ASIGNA> ( <PABRE> <ENTERO> <COMA> <ENTERO> <PCIERRA> | funcion() ) | <OBJ> <ID> <ASIGNA> <PABRE> <ID> <COMA> <ENTERO> <COMA> <ENTERO> <COMA> <ENTERO> <PCIERRA> )
+    {
+        System.out.println("Una declaracion");
+    }
+}
+
+void funcion():
+{}
+{
+    ( <TPAR> <PABRE> <ID> <COMA> ( <ID> | <ENTERO> ) <PCIERRA> | <MHOR> <PABRE> <ID> <COMA> ( <ID> | <ENTERO> ) <PCIERRA> )
+    {
+        System.out.println("Una funcion");
+    }
+
+}
+
+void imprimir():
+{}
+{
+    <IMPR> <PABRE> <CADENA> ( <MAS> ( <CADENA> | <ID> | <ENTERO> ) )* <PCIERRA>
+    {
+        System.out.println("Una impresion");
+    }
+}
+
+
+void If():
+{}
+{
+    <IF> compara() <DOSP> (unaEstructura())+ <DONE>
+    {
+        System.out.println("Un if");
+    }
+}
+
+void compara():
+{}
+{
+    (<ID> | <ENTERO>) <OPLOG> (<ID> | <ENTERO>)
+    {
+        System.out.println("Una comparacion");
+    }
+
+}
+
+void For():
+{}
+{
+    <FOR> <ID> <TO> <ENTERO> <DOSP> (unaEstructura())+ <DONE>
+    {
+        System.out.println("Un for");
+    }
+
+}

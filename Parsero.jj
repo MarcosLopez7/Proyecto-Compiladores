@@ -1,0 +1,65 @@
+PARSER_BEGIN(Parsero)
+
+public class Parsero {
+
+  public static void main(String args[]) throws ParseException {
+    try {
+      Parsero parser = new Parsero(new java.io.FileInputStream(args[0]));
+      parser.E();
+    }
+    catch(java.io.FileNotFoundException e)
+    {
+      System.out.println("El archivo no esta...");
+    }
+  }
+
+}
+
+PARSER_END(Parsero)
+
+SKIP :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+}
+
+TOKEN :
+{
+   < ID: "id" >
+|  < PABRE: "(" >
+|  < PCIERRA: ")" >
+|  < MAS: "+" >
+|  < ASTERISCO: "*" >
+}
+
+void E() :
+{ System.out.println("Simbolo no terminal E"); }
+{
+   (T() ( E_P() )* )
+}
+
+void E_P() :
+{ System.out.println("Simbolo no terminal E'"); }
+{
+  ( <MAS> T() ( E_P() )* )
+}
+
+void T() :
+{ System.out.println("Simbolo no terminal T"); }
+{
+  ( F() ( T_P() )* )
+}
+
+void T_P():
+{ System.out.println("Simbolo no terminal T'"); }
+{
+  ( <ASTERISCO> F() ( T_P() )* )
+}
+
+void F():
+{ System.out.println("Simbolo no terminal F"); }
+{
+  ( <ID> | <PABRE> E() <PCIERRA> )
+}
