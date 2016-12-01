@@ -2,6 +2,8 @@ PARSER_BEGIN(Physics)
 
 public class Physics {
 
+  public String codigo = "";
+
   public static void main(String args[]) throws ParseException {
     try {
       Physics parser = new Physics(new java.io.FileInputStream(args[0]));
@@ -54,7 +56,7 @@ TOKEN :
 }
 
 void S() :
-{}
+{codigo+= "#include <iostream>\nusing namespace std;\nstruct pos{\nfloat x;\nfloat y;\n}\ntypedef struct pos pos_t;\nstruct obj{\npos_t p;\ndouble masa;\ndouble velocidad;\ndouble angulo;\n}\ntypedef struct obj obj_t;\nint main(){\n"}
 {
      <START> (unaEstructura())+ <END> <EOF>
      {
