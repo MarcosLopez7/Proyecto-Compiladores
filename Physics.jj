@@ -68,25 +68,41 @@ void S() :
 {
      <START> (unaEstructura())+ <END> <EOF>
      {
+          codigo += "return 0;\n}";
          System.out.println("Hemos acabado");
-
-
      } 
 }
 
 void unaEstructura() :
 {}
 {
-    ( declara() | If() | For() | imprimir() )
+    ( declara()
+    {}
+    | If() 
+    {}
+    | For() 
+    {}
+    | imprimir() 
+    {}
+    )
     {
         System.out.println("una estructura");
     }
 }
 
 void declara() :
-{}
+{Token id, id2,ent, ent2, ent3;}
 {
-    ( <VAR> <ID> <ASIGNA> <ENTERO> | <POS> <ID> <ASIGNA> ( <PABRE> <ENTERO> <COMA> <ENTERO> <PCIERRA> | funcion() ) | <OBJ> <ID> <ASIGNA> <PABRE> <ID> <COMA> <ENTERO> <COMA> <ENTERO> <COMA> <ENTERO> <PCIERRA> )
+    ( <VAR> id=<ID> <ASIGNA> ent=<ENTERO> 
+    { codigo += "int " + id.image + " = " + ent.image + ";\n";}
+    | <POS> id=<ID> <ASIGNA> ( <PABRE> ent=<ENTERO> <COMA> ent2=<ENTERO> <PCIERRA> 
+                            { codigo += "pos_t " + id.image + " = (" + ent.image + ", " + ent2.image + ");\n";}
+                          | { codigo += "pos_t " + id.image + " = "; }
+                          funcion()
+                          ) 
+    | <OBJ> id=<ID> <ASIGNA> <PABRE> id2=<ID> <COMA> ent=<ENTERO> <COMA> ent2=<ENTERO> <COMA> ent3=<ENTERO> <PCIERRA> 
+    { codigo += "obj_t " + id.image + " = (" + id2.image + ", " + ent.image + ", " + ent2.image + ", " + ent3.image + ");\n";}
+    )
     {
         System.out.println("Una declaracion");
     }
