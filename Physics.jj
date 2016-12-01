@@ -8,6 +8,11 @@ public class Physics {
     try {
       Physics parser = new Physics(new java.io.FileInputStream(args[0]));
       parser.S();
+      try {
+      PrintWriter writer = new PrintWriter("physics.cpp", "UTF-8");
+      writer.println(codigo);
+      writer.close();
+    } catch (Exception e) {}
     }
     catch(java.io.FileNotFoundException e)
     {
@@ -61,6 +66,7 @@ void S() :
      <START> (unaEstructura())+ <END> <EOF>
      {
          System.out.println("Hemos acabado");
+
      } 
 }
 
