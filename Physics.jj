@@ -1,8 +1,11 @@
 PARSER_BEGIN(Physics)
+import java.util.Vector;
+import java.util.Iterator;
+import java.io.PrintWriter;
 
 public class Physics {
 
-  public String codigo = "";
+  public static String codigo = "";
 
   public static void main(String args[]) throws ParseException {
     try {
@@ -61,11 +64,12 @@ TOKEN :
 }
 
 void S() :
-{codigo+= "#include <iostream>\nusing namespace std;\nstruct pos{\nfloat x;\nfloat y;\n}\ntypedef struct pos pos_t;\nstruct obj{\npos_t p;\ndouble masa;\ndouble velocidad;\ndouble angulo;\n}\ntypedef struct obj obj_t;\nint main(){\n"}
+{ codigo += "#include <iostream>\nusing namespace std;\nstruct pos{\nfloat x;\nfloat y;\n}\ntypedef struct pos pos_t;\nstruct obj{\npos_t p;\ndouble masa;\ndouble velocidad;\ndouble angulo;\n}\ntypedef struct obj obj_t;\nint main(){\n";}
 {
      <START> (unaEstructura())+ <END> <EOF>
      {
          System.out.println("Hemos acabado");
+
 
      } 
 }
