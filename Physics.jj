@@ -3,9 +3,101 @@ import java.util.Vector;
 import java.util.Iterator;
 import java.io.PrintWriter;
 
+class Registro {
+
+  public int tipo;
+  public String id;
+
+  public Registro()
+  {
+     tipo = -1;
+     id = "";
+  }
+
+}
+
 public class Physics {
 
   public static String codigo = "";
+
+  public static Vector tabla = new Vector();
+
+  public static void checaFor(String id, String val){
+      int v = Integer.parseInt(val);
+      if( buscaID(id) != -1){
+        System.out.println("La variable "+id+" ya fue declarada");
+        System.exit(1);
+      }
+      if(v < 0){
+        System.out.println("Error la variable "+id+" tiene que ser mayor a 0");
+        System.exit(1);
+      }
+      guardaID(id,"var");
+  }
+
+  public static void guardaID(String id, String tipo)
+  {
+     int t = 0;
+     if((tipo).equals("var"))
+        t = 1;
+     if((tipo).equals("pos"))
+        t = 2;
+     if((tipo).equals("obj"))
+        t = 3;
+     if( buscaID(id) == -1)
+     {
+        Registro r = new Registro();
+        r.tipo = t;
+        r.id = id;
+        tabla.add(r);
+     }else{
+       System.out.println("La variable "+id+" ya fue declarada");
+       System.exit(1);
+     }
+  }
+
+  public static void eliminaID(String id)
+  {
+      Registro r;
+      int cont = 0;
+       Iterator<Registro> itr = tabla.iterator();
+        while(itr.hasNext()){
+            r=itr.next();
+            if((r.id).equals(id)){
+              tabla.remove(cont);
+              break;
+            }
+             cont++;
+        }
+  }
+
+  public static int buscaID(String id)
+  {
+      Registro r;
+
+       Iterator<Registro> itr = tabla.iterator();
+        while(itr.hasNext()){
+            r=itr.next();
+            if((r.id).equals(id))
+              return r.tipo;
+        }
+
+      return -1;
+  }
+
+  public static int buscaTipo(String id)
+  {
+      Registro r;
+
+       Iterator<Registro> itr = tabla.iterator();
+        while(itr.hasNext()){
+            r=itr.next();
+            if((r.id).equals(id))
+              return r.tipo;
+        }
+
+      return -1;
+  }
 
   public static void main(String args[]) throws ParseException {
     try {
@@ -37,7 +129,7 @@ SKIP :
 
 TOKEN :
 {
-   < ENTERO: ["0"-"9"] (["0"-"9"])* > {}
+   < ENTERO: (["0"-"9"] (["0"-"9"])*) | ("-" (["0"-"9"])+) > {}
 |  < PABRE: "(" > {}
 |  < PCIERRA: ")" > {}
 |  < MAS: "+" > {}
@@ -70,7 +162,7 @@ void S() :
      {
           codigo += "return 0;\n}";
          System.out.println("Hemos acabado");
-     } 
+     }
 }
 
 void unaEstructura() :
@@ -78,11 +170,11 @@ void unaEstructura() :
 {
     ( declara()
     {}
-    | If() 
+    | If()
     {}
-    | For() 
+    | For()
     {}
-    | imprimir() 
+    | imprimir()
     {}
     )
     {
@@ -91,38 +183,103 @@ void unaEstructura() :
 }
 
 void declara() :
-{Token id, id2,ent, ent2, ent3;}
+{Token id, id2,ent, ent2, ent3, tipo;}
 {
-    ( <VAR> id=<ID> <ASIGNA> ent=<ENTERO> 
+    ( LOOKAHEAD(3) tipo=<VAR> id=<ID> <ASIGNA> ent=<ENTERO>
     { codigo += "int " + id.image + " = " + ent.image + ";\n";}
-    | <POS> id=<ID> <ASIGNA> ( <PABRE> ent=<ENTERO> <COMA> ent2=<ENTERO> <PCIERRA> 
+    | LOOKAHEAD(3) tipo=<POS> id=<ID> <ASIGNA> ( <PABRE> ent=<ENTERO> <COMA> ent2=<ENTERO> <PCIERRA>
                             { codigo += "pos_t " + id.image + ";\n" + id.image + ".x = " + ent.image + ";\n"+ id.image + ".y = " + ent2.image + ";\n";}
                           | { codigo += "pos_t " + id.image + " = "; }
                           funcion()
-                          ) 
-    | <OBJ> id=<ID> <ASIGNA> <PABRE> id2=<ID> <COMA> ent=<ENTERO> <COMA> ent2=<ENTERO> <COMA> ent3=<ENTERO> <PCIERRA> 
+                          )
+    | tipo=<OBJ> id=<ID> <ASIGNA> <PABRE> id2=<ID>
+    {
+    int ti = buscaTipo(id2.image);
+    if( ti != 2)
+      if( ti == -1 ){
+        System.out.println("La variable "+id.image+" no fue declarada");
+        System.exit(1);
+      }else{
+        System.out.println("La variable "+id.image+" tiene que ser tipo POS");
+        System.exit(1);
+      }
+
+    }
+    <COMA> ent=<ENTERO> <COMA> ent2=<ENTERO> <COMA> ent3=<ENTERO> <PCIERRA>
     { codigo += "obj_t " + id.image + ";\n"+ id.image + ".p = " + id2.image + ";\n"+ id.image + ".masa = " + ent.image + ";\n"+ id.image + ".velocidad = " + ent2.image + ";\n"+ id.image + ".angulo = " + ent3.image + ";\n";}
     )
     {
         System.out.println("Una declaracion");
+        guardaID(id.image,tipo.image);
     }
 }
 
 void funcion():
 {Token id, id2, ent;}
 {
-    ( <TPAR> <PABRE> id=<ID> <COMA> ( id2=<ID> 
-                                      {codigo += "tiroParabolico(" + id.image + ", " + id2.image + ");\n";}
-                                    | ent=<ENTERO> 
+    ( <TPAR> <PABRE> id=<ID>
+                        {
+                        int ti = buscaTipo(id.image);
+                        if( ti != 3)
+                          if( ti == -1 ){
+                            System.out.println("La variable "+id.image+" no fue declarada");
+                            System.exit(1);
+                          }else{
+                            System.out.println("La variable "+id.image+" tiene que ser tipo OBJ");
+                            System.exit(1);
+                          }
+                        }
+                        <COMA> ( id2=<ID>
+                                      {
+                                        codigo += "tiroParabolico(" + id.image + ", " + id2.image + ");\n";
+                                        int ti2 = buscaTipo(id2.image);
+                                        if( ti2 != 1)
+                                          if( ti2 == -1 ){
+                                            System.out.println("La variable "+id.image+" no fue declarada");
+                                            System.exit(1);
+                                          }else{
+                                            System.out.println("La variable "+id.image+" tiene que ser tipo VAR");
+                                            System.exit(1);
+                                          }
+
+                                      }
+                                    | ent=<ENTERO>
                                       {codigo += "tiroParabolico(" + id.image + ", " + ent.image + ");\n";}
-                                    ) <PCIERRA> 
-    | <MHOR> <PABRE> id=<ID> <COMA> ( id2=<ID> 
-                                      {codigo += "movimientoHorizontal(" + id.image + ", " + id2.image + ");\n";}
-                                    | ent=<ENTERO> 
+                                    ) <PCIERRA>
+    | <MHOR> <PABRE> id=<ID> {
+                                int ti3 = buscaTipo(id.image);
+                                if( ti3 != 3)
+                                  if( ti3 == -1 ){
+                                    System.out.println("La variable "+id.image+" no fue declarada");
+                                    System.exit(1);
+                                  }else{
+                                    System.out.println("La variable "+id.image+" tiene que ser tipo OBJ");
+                                    System.exit(1);
+                                  }
+                             }
+                                <COMA> ( id2=<ID>
+                                      {
+                                        codigo += "movimientoHorizontal(" + id.image + ", " + id2.image + ");\n";
+                                        int ti4 = buscaTipo(id2.image);
+                                        if( ti4 != 1)
+                                          if( ti4 == -1 ){
+                                            System.out.println("La variable "+id.image+" no fue declarada");
+                                            System.exit(1);
+                                          }else{
+                                            System.out.println("La variable "+id.image+" tiene que ser tipo VAR");
+                                            System.exit(1);
+                                          }
+                                      }
+                                    | ent=<ENTERO>
                                       {codigo += "movimientoHorizontal(" + id.image + ", " + ent.image + ");\n";}
                                     ) <PCIERRA> )
     {
         System.out.println("Una funcion");
+        int ti = buscaID(id.image);
+        if( ti == -1){
+          System.out.println("La variable "+id.image+" no fue declarada");
+          System.exit(1);
+        }
     }
 
 }
@@ -134,8 +291,15 @@ void imprimir():
     <IMPR> <PABRE> cad=<CADENA> ( <MAS> ( cad2=<CADENA>
                                           {s+= " << " + cad2.image;}
                                           | id=<ID>
-                                          {s+= " << " + id.image;}
-                                          | ent=<ENTERO> 
+                                          {
+                                            s+= " << " + id.image;
+                                            int ti = buscaID(id.image);
+                                            if( ti == -1){
+                                                System.out.println("La variable "+id.image+" no fue declarada");
+                                                System.exit(1);
+                                            }
+                                          }
+                                          | ent=<ENTERO>
                                           {s+= " << " + ent.image;}
                                           ) )* <PCIERRA>
     {
@@ -148,10 +312,10 @@ void imprimir():
 void If():
 {}
 {
-    <IF> 
+    <IF>
     {codigo += "if (";}
-    compara() 
-    <DOSP> 
+    compara()
+    <DOSP>
     {codigo += "){\n";}
     (unaEstructura())+
     <DONE>
@@ -164,14 +328,36 @@ void If():
 void compara():
 {Token id, id2, ent, ent2, op;}
 {
-    (id=<ID> 
-      {codigo += id.image;}
+    (id=<ID>
+      {
+        codigo += id.image;
+        int ti = buscaTipo(id.image);
+        if( ti != 1)
+          if( ti == -1 ){
+            System.out.println("La variable "+id.image+" no fue declarada");
+            System.exit(1);
+          }else{
+            System.out.println("La variable "+id.image+" tiene que ser tipo VAR");
+            System.exit(1);
+          }
+      }
     | ent=<ENTERO>
       {codigo += ent.image;}
-    ) 
-    op=<OPLOG> 
-    (id2=<ID> 
-      {codigo+= op.image + id2.image;}
+    )
+    op=<OPLOG>
+    (id2=<ID>
+      {
+        codigo+= op.image + id2.image;
+        int ti2 = buscaTipo(id2.image);
+        if( ti2 != 1)
+          if( ti2 == -1 ){
+            System.out.println("La variable "+id2.image+" no fue declarada");
+            System.exit(1);
+          }else{
+            System.out.println("La variable "+id2.image+" tiene que ser tipo VAR");
+            System.exit(1);
+          }
+      }
     | ent2=<ENTERO>
       {codigo+= op.image + ent2.image;}
     )
@@ -184,13 +370,17 @@ void compara():
 void For():
 {Token id, ent;}
 {
-    <FOR> id=<ID> <TO> ent=<ENTERO> <DOSP> 
-    { codigo += "for (int " + id.image + "= 0; " + id.image + " < " + ent.image + "; ++" + id.image + "){\n";}
-    (unaEstructura())+ 
+    <FOR> id=<ID> <TO> ent=<ENTERO> <DOSP>
+    {
+        checaFor(id.image,ent.image);
+        codigo += "for (int " + id.image + "= 0; " + id.image + " < " + ent.image + "; ++" + id.image + "){\n";
+    }
+    (unaEstructura())+
     <DONE>
     {
         codigo += "}\n";
         System.out.println("Un for");
+        eliminaID(id.image);
     }
 
 }
