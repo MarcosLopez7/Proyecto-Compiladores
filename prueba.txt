@@ -5,5 +5,5 @@
 	obj o2 = (s2, 30, 10, 0)
 	var t = 5
         pos final = mover_horizontal(o1, t)
-	imprimir('Posicion de objeto 1: ' + final)
+	imprimir("Posicion de objeto 1: " + final)
 #end

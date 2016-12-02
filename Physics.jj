@@ -60,11 +60,11 @@ TOKEN :
 |  < OBJ: "obj">
 |  < OPLOG: ( "==" | "<=" | ">=" | ">" | "<" )>
 |  < ID: ["a"-"z","A"-"Z"] ( ["a"-"z","A"-"Z","0"-"9"] )* >
-|  < CADENA: "'" ( ["a"-"z","A"-"Z","0"-"9", " ", ",", ".", ":"] )* "'" >
+|  < CADENA: "\"" ( ["a"-"z","A"-"Z","0"-"9", " ", ",", ".", ":"] )* "\"" >
 }
 
 void S() :
-{ codigo += "#include <iostream>\nusing namespace std;\nstruct pos{\nfloat x;\nfloat y;\n}\ntypedef struct pos pos_t;\nstruct obj{\npos_t p;\ndouble masa;\ndouble velocidad;\ndouble angulo;\n}\ntypedef struct obj obj_t;\nint main(){\n";}
+{ codigo += "#include <iostream>\n#include <math.h>\n#define PI 3.141592\nusing namespace std;\nstruct pos{\nfloat x;\nfloat y;\n};\ntypedef struct pos pos_t;\nstruct obj{\npos_t p;\ndouble masa;\ndouble velocidad;\ndouble angulo;\n};\ntypedef struct obj obj_t;\n\npos_t tiroParabolico(obj_t obj,int t){\npos_t resultado;\nresultado.x = obj.p.x + (obj.velocidad*cos(obj.angulo*PI/180)*t);\nresultado.y = obj.p.y + (obj.velocidad*sin(obj.angulo*PI/180)*t) - (0.5*9.81*t*t);\nreturn resultado;\n}\npos_t movimientoHorizontal(obj_t obj,int t){\npos_t resultado;\nresultado.x = obj.p.x + (obj.velocidad*t);\nresultado.y = obj.p.y;\nreturn resultado;\n}\n\nostream & operator <<(ostream & os , pos_t & p){\nos << \"x=\" << p.x << \", y=\" << p.y;\nreturn os;\n}\nostream & operator << (ostream & os , obj_t & o){\nos << \"posicion= \" << o.p << \"masa=\" << o.masa << \"velocidad=\" << o.velocidad << \"angulo=\" << o.angulo;\nreturn os;\n}\n\nint main(){\n";}
 {
      <START> (unaEstructura())+ <END> <EOF>
      {
@@ -96,12 +96,12 @@ void declara() :
     ( <VAR> id=<ID> <ASIGNA> ent=<ENTERO> 
     { codigo += "int " + id.image + " = " + ent.image + ";\n";}
     | <POS> id=<ID> <ASIGNA> ( <PABRE> ent=<ENTERO> <COMA> ent2=<ENTERO> <PCIERRA> 
-                            { codigo += "pos_t " + id.image + " = (" + ent.image + ", " + ent2.image + ");\n";}
+                            { codigo += "pos_t " + id.image + ";\n" + id.image + ".x = " + ent.image + ";\n"+ id.image + ".y = " + ent2.image + ";\n";}
                           | { codigo += "pos_t " + id.image + " = "; }
                           funcion()
                           ) 
     | <OBJ> id=<ID> <ASIGNA> <PABRE> id2=<ID> <COMA> ent=<ENTERO> <COMA> ent2=<ENTERO> <COMA> ent3=<ENTERO> <PCIERRA> 
-    { codigo += "obj_t " + id.image + " = (" + id2.image + ", " + ent.image + ", " + ent2.image + ", " + ent3.image + ");\n";}
+    { codigo += "obj_t " + id.image + ";\n"+ id.image + ".p = " + id2.image + ";\n"+ id.image + ".masa = " + ent.image + ";\n"+ id.image + ".velocidad = " + ent2.image + ";\n"+ id.image + ".angulo = " + ent3.image + ";\n";}
     )
     {
         System.out.println("Una declaracion");
@@ -109,9 +109,18 @@ void declara() :
 }
 
 void funcion():
-{}
+{Token id, id2, ent;}
 {
-    ( <TPAR> <PABRE> <ID> <COMA> ( <ID> | <ENTERO> ) <PCIERRA> | <MHOR> <PABRE> <ID> <COMA> ( <ID> | <ENTERO> ) <PCIERRA> )
+    ( <TPAR> <PABRE> id=<ID> <COMA> ( id2=<ID> 
+                                      {codigo += "tiroParabolico(" + id.image + ", " + id2.image + ");\n";}
+                                    | ent=<ENTERO> 
+                                      {codigo += "tiroParabolico(" + id.image + ", " + ent.image + ");\n";}
+                                    ) <PCIERRA> 
+    | <MHOR> <PABRE> id=<ID> <COMA> ( id2=<ID> 
+                                      {codigo += "movimientoHorizontal(" + id.image + ", " + id2.image + ");\n";}
+                                    | ent=<ENTERO> 
+                                      {codigo += "movimientoHorizontal(" + id.image + ", " + ent.image + ");\n";}
+                                    ) <PCIERRA> )
     {
         System.out.println("Una funcion");
     }
@@ -119,10 +128,18 @@ void funcion():
 }
 
 void imprimir():
-{}
+{Token cad, cad2, id, ent;
+  String s ="";}
 {
-    <IMPR> <PABRE> <CADENA> ( <MAS> ( <CADENA> | <ID> | <ENTERO> ) )* <PCIERRA>
+    <IMPR> <PABRE> cad=<CADENA> ( <MAS> ( cad2=<CADENA>
+                                          {s+= " << " + cad2.image;}
+                                          | id=<ID>
+                                          {s+= " << " + id.image;}
+                                          | ent=<ENTERO> 
+                                          {s+= " << " + ent.image;}
+                                          ) )* <PCIERRA>
     {
+        codigo += "cout << " + cad.image + s + " << endl;\n";
         System.out.println("Una impresion");
     }
 }
@@ -131,16 +148,33 @@ void imprimir():
 void If():
 {}
 {
-    <IF> compara() <DOSP> (unaEstructura())+ <DONE>
+    <IF> 
+    {codigo += "if (";}
+    compara() 
+    <DOSP> 
+    {codigo += "){\n";}
+    (unaEstructura())+
+    <DONE>
     {
+        codigo += "}\n";
         System.out.println("Un if");
     }
 }
 
 void compara():
-{}
+{Token id, id2, ent, ent2, op;}
 {
-    (<ID> | <ENTERO>) <OPLOG> (<ID> | <ENTERO>)
+    (id=<ID> 
+      {codigo += id.image;}
+    | ent=<ENTERO>
+      {codigo += ent.image;}
+    ) 
+    op=<OPLOG> 
+    (id2=<ID> 
+      {codigo+= op.image + id2.image;}
+    | ent2=<ENTERO>
+      {codigo+= op.image + ent2.image;}
+    )
     {
         System.out.println("Una comparacion");
     }
@@ -148,10 +182,14 @@ void compara():
 }
 
 void For():
-{}
+{Token id, ent;}
 {
-    <FOR> <ID> <TO> <ENTERO> <DOSP> (unaEstructura())+ <DONE>
+    <FOR> id=<ID> <TO> ent=<ENTERO> <DOSP> 
+    { codigo += "for (int " + id.image + "= 0; " + id.image + " < " + ent.image + "; ++" + id.image + "){\n";}
+    (unaEstructura())+ 
+    <DONE>
     {
+        codigo += "}\n";
         System.out.println("Un for");
     }
 
